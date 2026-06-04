@@ -15,16 +15,7 @@ def get_all_movies():
 
     conn.close()
 
-    movies = []
-    for row in rows:
-        movies.append({
-            "movie_id":     row[0],
-            "title":        row[1],
-            "director":     row[2],
-            "genre":        row[3],
-            "release_year": row[4],
-            "rating":       row[5]
-        })
+    movies = [dict(row) for row in rows]
 
     return jsonify(movies)
 
@@ -35,21 +26,12 @@ def get_one_movie(id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (id,))
+    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (id,))
     row = cursor.fetchone()
 
     conn.close()
 
-    movie = {
-        "movie_id":     row[0],
-        "title":        row[1],
-        "director":     row[2],
-        "genre":        row[3],
-        "release_year": row[4],
-        "rating":       row[5]
-    }
-
-    return jsonify(movie)
+    return jsonify(dict(row))
 
 
 # ─── ADD NEW MOVIE ───────────────────────────────────────────────
@@ -62,7 +44,7 @@ def add_movie():
 
     cursor.execute('''
         INSERT INTO movies (title, director, genre, release_year, rating)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (?, ?, ?, ?, ?)
     ''', (
         data["title"],
         data["director"],
@@ -87,12 +69,12 @@ def update_movie(id):
 
     cursor.execute('''
         UPDATE movies
-        SET title        = %s,
-            director     = %s,
-            genre        = %s,
-            release_year = %s,
-            rating       = %s
-        WHERE movie_id = %s
+        SET title        = ?,
+            director     = ?,
+            genre        = ?,
+            release_year = ?,
+            rating       = ?
+        WHERE movie_id = ?
     ''', (
         data["title"],
         data["director"],
@@ -114,7 +96,7 @@ def delete_movie(id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM movies WHERE movie_id = %s", (id,))
+    cursor.execute("DELETE FROM movies WHERE movie_id = ?", (id,))
 
     conn.commit()
     conn.close()

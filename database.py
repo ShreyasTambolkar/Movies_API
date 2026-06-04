@@ -1,16 +1,10 @@
-import mysql.connector
-import os
-from dotenv import load_dotenv
+import sqlite3
 
-load_dotenv()
+DATABASE = "movies.db"
 
 def get_connection():
-    conn = mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
@@ -19,16 +13,15 @@ def init_db():
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS movies (
-            movie_id     INT AUTO_INCREMENT PRIMARY KEY,
-            title        VARCHAR(100),
-            director     VARCHAR(100),
-            genre        VARCHAR(50),
-            release_year INT,
-            rating       DECIMAL(2,1)
+            movie_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            title        TEXT,
+            director     TEXT,
+            genre        TEXT,
+            release_year INTEGER,
+            rating       REAL
         )
     ''')
 
     conn.commit()
-    cursor.close()
     conn.close()
     print("Database is ready!")
