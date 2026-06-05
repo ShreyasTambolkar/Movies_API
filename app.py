@@ -59,30 +59,25 @@ def add_movie():
     return jsonify({"message": "Movie added successfully!"})
 
 
-# ─── UPDATE MOVIE ────────────────────────────────────────────────
+# ─── UPDATE MOVIE (only fields you send will be updated) ─────────
 @app.route("/movies/<int:id>", methods=["PUT"])
 def update_movie(id):
     data = request.get_json()
 
+    # list of fields that are allowed to be updated
+    allowed_fields = ["title", "director", "genre", "release_year", "rating"]
+
+    # only keep the fields that were actually sent by the user
+    updates = {key: value for key, value in data.items() if key in allowed_fields}
+
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute('''
-        UPDATE movies
-        SET title        = ?,
-            director     = ?,
-            genre        = ?,
-            release_year = ?,
-            rating       = ?
-        WHERE movie_id = ?
-    ''', (
-        data["title"],
-        data["director"],
-        data["genre"],
-        data["release_year"],
-        data["rating"],
-        id
-    ))
+    for field, value in updates.items():
+        cursor.execute(
+            f"UPDATE movies SET {field} = ? WHERE movie_id = ?",
+            (value, id)
+        )
 
     conn.commit()
     conn.close()
