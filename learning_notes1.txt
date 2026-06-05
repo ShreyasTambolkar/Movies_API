@@ -99,19 +99,31 @@ travel over the internet and be displayed in Postman.
 Reads the JSON body that Postman sends and converts it into a Python
 dictionary so your code can use it.
 
+VALIDATION — Movies API
 
-11. URL Parameter — <int:id>
-Captures a value directly from the URL and passes it into the function
-as a variable. So /movies/3 automatically sets id = 3.
+ 
+GET /movies  and  GET /movies/sorted
+- If database is empty, returns "No movies found in the database!" (404)
+ 
+GET /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
+ 
+POST /movies
+- If any field is missing, returns "Missing fields: ..." (400)
+- If rating is not between 1 and 10, returns "Rating must be between 1 and 10!" (400)
+- If release year is before 1888 or after 2100, returns "Please enter a valid release year!" (400)
+- If ID already exists, returns "A movie with this ID already exists!" (409)
+- If title and director already exist, returns "This movie already exists in the database!" (409)
+ 
+PUT /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
+- If rating is invalid, returns "Rating must be between 1 and 10!" (400)
+- If release year is invalid, returns "Please enter a valid release year!" (400)
+- If no valid fields are sent, returns "No valid fields provided to update!" (400)
+ 
+DELETE /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
 
 
-## Movies API Endpoints
 
-| Method | URL | What it does |
-|---|---|---|
-| GET | /movies | Get all movies |
-| GET | /movies/1 | Get one movie by ID |
-| POST | /movies | Add a new movie |
-| PUT | /movies/1 | Update a movie |
-| DELETE | /movies/1 | Delete a movie |
 
