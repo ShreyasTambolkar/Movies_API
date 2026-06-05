@@ -20,6 +20,22 @@ def get_all_movies():
     return jsonify(movies)
 
 
+# ─── GET ALL MOVIES SORTED BY RATING ────────────────────────────
+@app.route("/movies/sorted", methods=["GET"])
+def get_movies_sorted():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM movies ORDER BY rating DESC")
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    movies = [dict(row) for row in rows]
+
+    return jsonify(movies)
+
+
 # ─── GET ONE MOVIE ───────────────────────────────────────────────
 @app.route("/movies/<int:id>", methods=["GET"])
 def get_one_movie(id):
@@ -42,10 +58,30 @@ def add_movie():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # check if movie_id already exists
+    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (data["movie_id"],))
+    existing_id = cursor.fetchone()
+
+    if existing_id:
+        conn.close()
+        return jsonify({"message": "A movie with this ID already exists!"}), 409
+
+    # check if title and director already exists
+    cursor.execute(
+        "SELECT * FROM movies WHERE title = ? AND director = ?",
+        (data["title"], data["director"])
+    )
+    existing_movie = cursor.fetchone()
+
+    if existing_movie:
+        conn.close()
+        return jsonify({"message": "This movie already exists in the database!"}), 409
+
     cursor.execute('''
-        INSERT INTO movies (title, director, genre, release_year, rating)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO movies (movie_id, title, director, genre, release_year, rating)
+        VALUES (?, ?, ?, ?, ?, ?)
     ''', (
+        data["movie_id"],
         data["title"],
         data["director"],
         data["genre"],
@@ -64,10 +100,8 @@ def add_movie():
 def update_movie(id):
     data = request.get_json()
 
-    # list of fields that are allowed to be updated
     allowed_fields = ["title", "director", "genre", "release_year", "rating"]
 
-    # only keep the fields that were actually sent by the user
     updates = {key: value for key, value in data.items() if key in allowed_fields}
 
     conn = get_connection()
@@ -91,12 +125,20 @@ def delete_movie(id):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # check if movie exists before deleting
+    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (id,))
+    existing = cursor.fetchone()
+
+    if not existing:
+        conn.close()
+        return jsonify({"message": f"Movie with ID {id} does not exist!"}), 404
+
     cursor.execute("DELETE FROM movies WHERE movie_id = ?", (id,))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Movie deleted successfully!"})
+    return jsonify({"message": f"Movie with ID {id} deleted successfully!"})
 
 
 # ─── START THE APP ───────────────────────────────────────────────
