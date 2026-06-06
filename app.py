@@ -140,7 +140,7 @@ def update_movie(id):
         return jsonify({"message": "Rating must be between 1 and 10!"}), 400
 
     # check release year is valid if it is being updated
-    if "release_year" in data and (data["release_year"] < 1888 or data["release_year"] > 2100):
+    if "release_year" in data and (data["release_year"] < 1950 or data["release_year"] > 2026):
         conn.close()
         return jsonify({"message": "Please enter a valid release year!"}), 400
 
