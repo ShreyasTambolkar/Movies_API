@@ -4,11 +4,18 @@ A simple REST API built with Python and Flask that supports full CRUD functional
 
 ---
 
+## Live API
+
+Base URL: `https://movies-api-n9r5.onrender.com`
+
+---
+
 ## Tech Stack
 
 - **Language:** Python
 - **Framework:** Flask
 - **Database:** SQLite
+- **Deployed on:** Render
 
 ---
 
@@ -18,8 +25,8 @@ A simple REST API built with Python and Flask that supports full CRUD functional
 movies_api/
 ├── app.py                  ← All API routes
 ├── database.py             ← Database connection and table setup
+├── requirements.txt        ← Python libraries needed
 ├── validation_notes.txt    ← Notes on validations added
-├── .env                    ← Database credentials (not pushed to GitHub)
 ├── .gitignore              ← Files ignored by Git
 └── README.md               ← Project documentation
 ```
@@ -30,8 +37,8 @@ movies_api/
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/ShreyasTambolkar/Movies_API.git
-cd Movies_API
+git clone https://github.com/your-username/movies-api.git
+cd movies-api
 ```
 
 **2. Install required libraries**
@@ -39,7 +46,7 @@ cd Movies_API
 pip install flask
 ```
 
-**3. Run the API**
+**3. Run the API locally**
 ```bash
 python app.py
 ```
@@ -58,6 +65,19 @@ The API will start at `http://127.0.0.1:5000`
 | POST | `/movies` | Add a new movie |
 | PUT | `/movies/<id>` | Update a movie |
 | DELETE | `/movies/<id>` | Delete a movie |
+
+---
+
+## Live API Examples
+
+| Method | URL |
+|---|---|
+| GET all | `https://movies-api-n9r5.onrender.com/movies` |
+| GET sorted | `https://movies-api-n9r5.onrender.com/movies/sorted` |
+| GET one | `https://movies-api-n9r5.onrender.com/movies/1` |
+| POST | `https://movies-api-n9r5.onrender.com/movies` |
+| PUT | `https://movies-api-n9r5.onrender.com/movies/1` |
+| DELETE | `https://movies-api-n9r5.onrender.com/movies/1` |
 
 ---
 
