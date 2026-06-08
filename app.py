@@ -143,7 +143,8 @@ def update_movie(id):
     if "release_year" in data and (data["release_year"] < 1950 or data["release_year"] > 2026):
         conn.close()
         return jsonify({"message": "Please enter a valid release year!"}), 400
-    if "release_year" in data and (data["release_year"] == "release_year" ):
+        
+    if "release_year" in data and (data["release_year"] == existing["release_year"]):
         conn.close()
         return jsonify({"message": "The current year cannot be same as release year"}), 400
 
