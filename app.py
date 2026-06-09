@@ -145,9 +145,9 @@ def update_movie(id):
         conn.close()
         return jsonify({"message": "Please enter a valid release year!"}), 400
         
-    if "release_year" in data and (data["release_year"] == existing["release_year"]):
-        conn.close()
-        return jsonify({"message": "The current year cannot be same as release year"}), 400
+    # if "release_year" in data and (data["release_year"] == existing["release_year"]):
+    #     conn.close()
+    #     return jsonify({"message": "The current year cannot be same as release year"}), 400
 
     allowed_fields = ["title", "director", "genre", "release_year", "rating"]
     updates = {key: value for key, value in data.items() if key in allowed_fields}
