@@ -156,6 +156,48 @@ def forgot_password():
         "message": "If that email is registered, a reset link has been sent."
     }), 200
 
+# ─── REGISTER ────────────────────────────────────────────────────
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+
+    email    = data.get("email", "").strip()
+    password = data.get("password", "").strip()
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required."}), 400
+
+    import re
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
+
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters."}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    existing = cursor.fetchone()
+
+    if existing:
+        conn.close()
+        return jsonify({"error": "Email already registered."}), 409
+
+    cursor.execute(
+        "INSERT INTO users (email, password) VALUES (?, ?)",
+        (email, hash_password(password))
+    )
+    conn.commit()
+
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    new_user = cursor.fetchone()
+    conn.close()
+
+    return jsonify({
+        "message": "Account created successfully!",
+        "user": {"id": new_user["id"], "email": new_user["email"]}
+    }), 201
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
