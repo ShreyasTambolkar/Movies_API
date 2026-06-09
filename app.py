@@ -1,9 +1,38 @@
 from flask import Flask, jsonify, request
 from database import get_connection, init_db
 from flask_cors import CORS
+import hashlib
 
 app = Flask(__name__)
 CORS(app)   
+
+# ─── HASH PASSWORD HELPER ────────────────────────────────────────
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+# ─── CREATE USERS TABLE + SEED TEST USER ────────────────────────
+def init_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
+
+    # Seed test user → email: test@movies.com | password: Test@123
+    cursor.execute("""
+        INSERT OR IGNORE INTO users (email, password)
+        VALUES (?, ?)
+    """, ("test@movies.com", hash_password("Test@123")))
+
+    conn.commit()
+    conn.close()
+
 
 # ─── GET ALL MOVIES ──────────────────────────────────────────────
 @app.route("/movies", methods=["GET"])
@@ -145,9 +174,9 @@ def update_movie(id):
         conn.close()
         return jsonify({"message": "Please enter a valid release year!"}), 400
         
-    # if "release_year" in data and (data["release_year"] == existing["release_year"]):
-    #     conn.close()
-    #     return jsonify({"message": "The current year cannot be same as release year"}), 400
+    if "release_year" in data and (data["release_year"] == existing["release_year"]):
+        conn.close()
+        return jsonify({"message": "The current year cannot be same as release year"}), 400
 
     allowed_fields = ["title", "director", "genre", "release_year", "rating"]
     updates = {key: value for key, value in data.items() if key in allowed_fields}
@@ -189,7 +218,51 @@ def delete_movie(id):
     return jsonify({"message": f"Movie with ID {id} deleted successfully!"})
 
 
+# ─── LOGIN ───────────────────────────────────────────────────────
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    email    = data.get("email", "").strip()
+    password = data.get("password", "").strip()
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required."}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    user = cursor.fetchone()
+
+    conn.close()
+
+    if not user or user["password"] != hash_password(password):
+        return jsonify({"error": "Invalid email or password."}), 401
+
+    return jsonify({
+        "message": "Login successful.",
+        "user": {"id": user["id"], "email": user["email"]}
+    }), 200
+
+
+# ─── FORGOT PASSWORD (stub) ──────────────────────────────────────
+@app.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data  = request.get_json()
+    email = data.get("email", "").strip()
+
+    if not email:
+        return jsonify({"error": "Email is required."}), 400
+
+    # Always return the same message so you don't leak which emails exist
+    return jsonify({
+        "message": "If that email is registered, a reset link has been sent."
+    }), 200
+
+
 # ─── START THE APP ───────────────────────────────────────────────
 if __name__ == "__main__":
     init_db()
+    init_users()
     app.run(host="0.0.0.0", port=5000)
