@@ -10,30 +10,6 @@ CORS(app)
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-
-# ─── CREATE USERS TABLE + SEED TEST USER ────────────────────────
-def init_users():
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
-    """)
-
-    # Seed test user → email: test@movies.com | password: Test@123
-    cursor.execute("""
-        INSERT OR IGNORE INTO users (email, password)
-        VALUES (?, ?)
-    """, ("test@movies.com", hash_password("Test@123")))
-
-    conn.commit()
-    conn.close()
-
-
 # ─── GET ALL MOVIES ──────────────────────────────────────────────
 @app.route("/movies", methods=["GET"])
 def get_all_movies():
@@ -264,5 +240,5 @@ def forgot_password():
 # ─── START THE APP ───────────────────────────────────────────────
 if __name__ == "__main__":
     init_db()
-    init_users()
+
     app.run(host="0.0.0.0", port=5000)
