@@ -2,12 +2,18 @@ from flask import Flask, jsonify, request
 from database import get_connection, init_db
 from flask_cors import CORS
 import hashlib
+import os
+import re
 
 app = Flask(__name__)
-CORS(app)   
+CORS(app)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
+def row_to_dict(cursor, row):
+    columns = [desc[0] for desc in cursor.description]
+    return dict(zip(columns, row))
 
 @app.route("/movies", methods=["GET"])
 def get_all_movies():
@@ -15,10 +21,10 @@ def get_all_movies():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM movies")
     rows = cursor.fetchall()
+    movies = [row_to_dict(cursor, row) for row in rows]
     conn.close()
-    movies = [dict(row) for row in rows]
     if not movies:
-        return jsonify({"message": "No movies found in the database!"}), 404
+        return jsonify({"message": "No movies found!"}), 404
     return jsonify(movies)
 
 @app.route("/movies/sorted", methods=["GET"])
@@ -27,27 +33,27 @@ def get_movies_sorted():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM movies ORDER BY rating DESC")
     rows = cursor.fetchall()
+    movies = [row_to_dict(cursor, row) for row in rows]
     conn.close()
-    movies = [dict(row) for row in rows]
     if not movies:
-        return jsonify({"message": "No movies found in the database!"}), 404
+        return jsonify({"message": "No movies found!"}), 404
     return jsonify(movies)
 
 @app.route("/movies/<int:id>", methods=["GET"])
 def get_one_movie(id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (id,))
+    cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (id,))
     row = cursor.fetchone()
     conn.close()
     if not row:
         return jsonify({"message": f"Movie with ID {id} does not exist!"}), 404
-    return jsonify(dict(row))
+    return jsonify(row_to_dict(cursor, row))
 
 @app.route("/movies", methods=["POST"])
 def add_movie():
     data = request.get_json()
-    required_fields = ["movie_id", "title", "director", "genre", "release_year", "rating"]
+    required_fields = ["title", "director", "genre", "release_year", "rating"]
     missing = [f for f in required_fields if f not in data]
     if missing:
         return jsonify({"message": f"Missing fields: {', '.join(missing)}"}), 400
@@ -57,21 +63,15 @@ def add_movie():
         return jsonify({"message": "Please enter a valid release year!"}), 400
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (data["movie_id"],))
+    cursor.execute("SELECT * FROM movies WHERE title = %s AND director = %s",
+        (data["title"], data["director"]))
     if cursor.fetchone():
         conn.close()
-        return jsonify({"message": "A movie with this ID already exists!"}), 409
-    cursor.execute(
-        "SELECT * FROM movies WHERE title = ? AND director = ?",
-        (data["title"], data["director"])
-    )
-    if cursor.fetchone():
-        conn.close()
-        return jsonify({"message": "This movie already exists in the database!"}), 409
+        return jsonify({"message": "This movie already exists!"}), 409
     cursor.execute('''
-        INSERT INTO movies (movie_id, title, director, genre, release_year, rating)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (data["movie_id"], data["title"], data["director"], data["genre"], data["release_year"], data["rating"]))
+        INSERT INTO movies (title, director, genre, release_year, rating)
+        VALUES (%s, %s, %s, %s, %s)
+    ''', (data["title"], data["director"], data["genre"], data["release_year"], data["rating"]))
     conn.commit()
     conn.close()
     return jsonify({"message": "Movie added successfully!"})
@@ -81,7 +81,7 @@ def update_movie(id):
     data = request.get_json()
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (id,))
+    cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (id,))
     existing = cursor.fetchone()
     if not existing:
         conn.close()
@@ -92,16 +92,13 @@ def update_movie(id):
     if "release_year" in data and (data["release_year"] < 1950 or data["release_year"] > 2026):
         conn.close()
         return jsonify({"message": "Please enter a valid release year!"}), 400
-    if "release_year" in data and (data["release_year"] == existing["release_year"]):
-        conn.close()
-        return jsonify({"message": "The current year cannot be same as release year"}), 400
     allowed_fields = ["title", "director", "genre", "release_year", "rating"]
     updates = {key: value for key, value in data.items() if key in allowed_fields}
     if not updates:
         conn.close()
-        return jsonify({"message": "No valid fields provided to update!"}), 400
+        return jsonify({"message": "No valid fields to update!"}), 400
     for field, value in updates.items():
-        cursor.execute(f"UPDATE movies SET {field} = ? WHERE movie_id = ?", (value, id))
+        cursor.execute(f"UPDATE movies SET {field} = %s WHERE movie_id = %s", (value, id))
     conn.commit()
     conn.close()
     return jsonify({"message": f"Movie with ID {id} updated successfully!"})
@@ -110,94 +107,69 @@ def update_movie(id):
 def delete_movie(id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM movies WHERE movie_id = ?", (id,))
+    cursor.execute("SELECT * FROM movies WHERE movie_id = %s", (id,))
     if not cursor.fetchone():
         conn.close()
         return jsonify({"message": f"Movie with ID {id} does not exist!"}), 404
-    cursor.execute("DELETE FROM movies WHERE movie_id = ?", (id,))
+    cursor.execute("DELETE FROM movies WHERE movie_id = %s", (id,))
     conn.commit()
     conn.close()
     return jsonify({"message": f"Movie with ID {id} deleted successfully!"})
 
-# ─── LOGIN ───────────────────────────────────────────────────────
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-    email    = data.get("email", "").strip()
+    email = data.get("email", "").strip()
     password = data.get("password", "").strip()
-
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
-
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    user = cursor.fetchone()
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+    row = cursor.fetchone()
     conn.close()
-
-    if not user:
+    if not row:
         return jsonify({"error": "Email not found."}), 401
-
+    user = row_to_dict(cursor, row)
     if user["password"] != hash_password(password):
         return jsonify({"error": "Incorrect password."}), 401
-
-    return jsonify({
-        "message": "Login successful.",
-        "user": {"id": user["id"], "email": user["email"]}
-    }), 200
+    return jsonify({"message": "Login successful.", "user": {"id": user["id"], "email": user["email"]}}), 200
 
 @app.route("/forgot-password", methods=["POST"])
 def forgot_password():
-    data  = request.get_json()
+    data = request.get_json()
     email = data.get("email", "").strip()
     if not email:
         return jsonify({"error": "Email is required."}), 400
-    return jsonify({
-        "message": "If that email is registered, a reset link has been sent."
-    }), 200
+    return jsonify({"message": "If that email is registered, a reset link has been sent."}), 200
 
-# ─── REGISTER ────────────────────────────────────────────────────
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-
-    email    = data.get("email", "").strip()
+    email = data.get("email", "").strip()
     password = data.get("password", "").strip()
-
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
-
-    import re
     if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
         return jsonify({"error": "Please enter a valid email address."}), 400
-
     if len(password) < 6:
         return jsonify({"error": "Password must be at least 6 characters."}), 400
-
     conn = get_connection()
     cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    existing = cursor.fetchone()
-
-    if existing:
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+    if cursor.fetchone():
         conn.close()
         return jsonify({"error": "Email already registered."}), 409
-
-    cursor.execute(
-        "INSERT INTO users (email, password) VALUES (?, ?)",
-        (email, hash_password(password))
-    )
+    cursor.execute("INSERT INTO users (email, password) VALUES (%s, %s)",
+        (email, hash_password(password)))
     conn.commit()
-
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    new_user = cursor.fetchone()
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+    row = cursor.fetchone()
+    new_user = row_to_dict(cursor, row)
     conn.close()
+    return jsonify({"message": "Account created successfully!", "user": {"id": new_user["id"], "email": new_user["email"]}}), 201
 
-    return jsonify({
-        "message": "Account created successfully!",
-        "user": {"id": new_user["id"], "email": new_user["email"]}
-    }), 201
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
