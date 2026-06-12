@@ -39,7 +39,7 @@ def get_movies_sorted():
         return jsonify({"message": "No movies found!"}), 404
     return jsonify(movies)
 
-# ✅ Chart route MUST be before /movies/<int:id> to avoid being caught by it
+
 @app.route("/movies/chart/by-genre", methods=["GET"])
 def movies_chart_by_genre():
     conn = get_connection()
@@ -53,12 +53,10 @@ def movies_chart_by_genre():
         genre = row[0]
         genre_counts[genre] = genre_counts.get(genre, 0) + 1
 
-    sorted_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)
+    # Add total count
+    genre_counts["total"] = sum(genre_counts.values())
 
-    return jsonify({
-        "categories": [g[0] for g in sorted_genres],
-        "series": [{"name": "Movies", "data": [g[1] for g in sorted_genres]}]
-    })
+    return jsonify(genre_counts)
 
 @app.route("/movies/<int:id>", methods=["GET"])
 def get_one_movie(id):
