@@ -76,6 +76,27 @@ def add_movie():
     conn.close()
     return jsonify({"message": "Movie added successfully!"})
 
+@app.route("/movies/chart/by-genre", methods=["GET"])
+def movies_chart_by_genre():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT genre FROM movies")
+    rows = cursor.fetchall()
+    conn.close()
+
+    genre_counts = {}
+    for row in rows:
+        genre = row[0]
+        genre_counts[genre] = genre_counts.get(genre, 0) + 1
+
+    sorted_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)
+
+    return jsonify({
+        "categories": [g[0] for g in sorted_genres],
+        "series": [{"name": "Movies", "data": [g[1] for g in sorted_genres]}]
+    })
+
+
 @app.route("/movies/<int:id>", methods=["PUT"])
 def update_movie(id):
     data = request.get_json()
