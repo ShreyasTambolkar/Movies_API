@@ -6,7 +6,7 @@ import os
 import re
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -38,6 +38,27 @@ def get_movies_sorted():
     if not movies:
         return jsonify({"message": "No movies found!"}), 404
     return jsonify(movies)
+
+# ✅ Chart route MUST be before /movies/<int:id> to avoid being caught by it
+@app.route("/movies/chart/by-genre", methods=["GET"])
+def movies_chart_by_genre():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT genre FROM movies")
+    rows = cursor.fetchall()
+    conn.close()
+
+    genre_counts = {}
+    for row in rows:
+        genre = row[0]
+        genre_counts[genre] = genre_counts.get(genre, 0) + 1
+
+    sorted_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)
+
+    return jsonify({
+        "categories": [g[0] for g in sorted_genres],
+        "series": [{"name": "Movies", "data": [g[1] for g in sorted_genres]}]
+    })
 
 @app.route("/movies/<int:id>", methods=["GET"])
 def get_one_movie(id):
@@ -75,27 +96,6 @@ def add_movie():
     conn.commit()
     conn.close()
     return jsonify({"message": "Movie added successfully!"})
-
-@app.route("/movies/chart/by-genre", methods=["GET"])
-def movies_chart_by_genre():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT genre FROM movies")
-    rows = cursor.fetchall()
-    conn.close()
-
-    genre_counts = {}
-    for row in rows:
-        genre = row[0]
-        genre_counts[genre] = genre_counts.get(genre, 0) + 1
-
-    sorted_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)
-
-    return jsonify({
-        "categories": [g[0] for g in sorted_genres],
-        "series": [{"name": "Movies", "data": [g[1] for g in sorted_genres]}]
-    })
-
 
 @app.route("/movies/<int:id>", methods=["PUT"])
 def update_movie(id):
