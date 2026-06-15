@@ -1,19 +1,17 @@
 from flask import Flask, jsonify, request
-from database import get_connection, init_db
+from database import get_connection, init_db, row_to_dict
 from flask_cors import CORS
+from movies_pagination import movies_bp
 import hashlib
 import os
 import re
 
 app = Flask(__name__)
+app.register_blueprint(movies_bp)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
-
-def row_to_dict(cursor, row):
-    columns = [desc[0] for desc in cursor.description]
-    return dict(zip(columns, row))
 
 @app.route("/movies", methods=["GET"])
 def get_all_movies():
