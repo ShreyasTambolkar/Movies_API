@@ -9,6 +9,10 @@ def get_connection():
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     return conn
 
+def row_to_dict(cursor, row):
+    columns = [desc[0] for desc in cursor.description]
+    return dict(zip(columns, row))
+    
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
