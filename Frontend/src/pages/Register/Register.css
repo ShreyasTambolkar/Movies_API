@@ -1,0 +1,20 @@
+/* reuse everything from Login.css and add only what's new */
+@import "../Login/Login.css";
+
+.switch-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.switch-link a {
+  color: #e2b714;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.switch-link a:hover {
+  color: #f0c43a;
+  text-decoration: underline;
+}

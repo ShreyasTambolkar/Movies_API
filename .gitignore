@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+venv/
+.idea/
+movies.db
+node_modules/

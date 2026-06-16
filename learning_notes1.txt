@@ -1,0 +1,129 @@
+ Movies API Session
+
+ Local Environment
+- Python already installed
+- Git already installed
+- Postman already installed
+- Flask already installed
+- MySQL (used as the database)
+
+
+
+Prompts:
+
+1. Understanding APIs and starting the Movies API
+> "What is an API and what is a REST API? 
+> I want to create a new Movies API that is simpler with less
+> fields so I can understand what is happening."
+
+2. Switching from SQLite to MySQL
+> "Can we use MySQL instead of SQLite?"
+
+3.Understanding password security
+> "Won't my password be leaked if I push my code to GitHub?"
+
+4.Setting up the .env file
+> "Give me the env and gitignore files also."
+
+5.Getting all the code in one go
+> "Create the same API but for Movies with short data."
+
+6.Adding sample data
+> "Give me some more movies."
+
+7. Understanding endpoints
+> "What is an endpoint?"
+
+8. Understanding the full program
+> "Explain the program fully to me as I don't have knowledge about API
+> but I have learnt Python and MySQL."
+
+
+Key Concepts Learned:
+
+1. API — Application Programming Interface
+Acts as a middleman between the client (Postman) and the database (MySQL).
+Just like a waiter in a restaurant — you don't go into the kitchen yourself,
+you tell the waiter what you want and they bring it back to you.
+
+2. REST API
+A set of rules for how the API should behave using HTTP methods and URLs.
+Each URL is called an endpoint and each HTTP method does a different job.
+
+3. HTTP Methods
+| Method | Job | Example |
+|---|---|---|
+| GET | Read data | Get all movies |
+| POST | Create new data | Add a new movie |
+| PUT | Update existing data | Update a movie's rating |
+| DELETE | Remove data | Delete a movie |
+
+4. HTTP Status Codes
+| Code | Meaning | When it occurs in Movies API |
+|---|---|---|
+| 200 | OK | GET and DELETE requests succeed |
+| 201 | Created | POST adds a new movie |
+| 400 | Bad Request | Required fields are missing |
+| 404 | Not Found | Movie ID does not exist |
+| 409 | Conflict | Duplicate entry |
+| 500 | Server Error | Something crashed in the code |
+
+5. @app.route()
+Attaches a URL to a Python function. Flask automatically calls that
+function when someone visits that URL. You never call the function
+yourself — Flask does it for you.
+
+
+6. conn — Connection
+Short for connection. Opens and closes the link between Python and MySQL —
+like dialing and hanging up a phone call. Every time you want to talk to
+the database you open a conn, and when you are done you close it.
+
+
+7. cursor
+A cursor is like a pen that writes and runs SQL queries inside the
+connection. You cannot run SQL without a cursor.
+
+
+8. commit()
+Saves changes to the database permanently — like clicking Save in a document.
+Without commit(), your INSERT, UPDATE or DELETE won't actually be saved.
+
+
+9. jsonify()
+Converts a Python dictionary or list into JSON format so the data can
+travel over the internet and be displayed in Postman.
+
+
+10. request.get_json()
+Reads the JSON body that Postman sends and converts it into a Python
+dictionary so your code can use it.
+
+VALIDATION — Movies API
+
+ 
+GET /movies  and  GET /movies/sorted
+- If database is empty, returns "No movies found in the database!" (404)
+ 
+GET /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
+ 
+POST /movies
+- If any field is missing, returns "Missing fields: ..." (400)
+- If rating is not between 1 and 10, returns "Rating must be between 1 and 10!" (400)
+- If release year is before 1888 or after 2100, returns "Please enter a valid release year!" (400)
+- If ID already exists, returns "A movie with this ID already exists!" (409)
+- If title and director already exist, returns "This movie already exists in the database!" (409)
+ 
+PUT /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
+- If rating is invalid, returns "Rating must be between 1 and 10!" (400)
+- If release year is invalid, returns "Please enter a valid release year!" (400)
+- If no valid fields are sent, returns "No valid fields provided to update!" (400)
+ 
+DELETE /movies/<id>
+- If ID does not exist, returns "Movie with ID {id} does not exist!" (404)
+
+
+
+
