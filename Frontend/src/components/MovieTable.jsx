@@ -4,13 +4,14 @@ import { movieService } from "../services/api";
 const LIMIT = 6;
 
 const SORT_OPTIONS = [
-  { label: "ID (Default)",      value: "movie_id",     order: "asc"  },
-  { label: "Title A → Z",       value: "title",        order: "asc"  },
-  { label: "Title Z → A",       value: "title",        order: "desc" },
-  { label: "Rating High → Low", value: "rating",       order: "desc" },
-  { label: "Rating Low → High", value: "rating",       order: "asc"  },
-  { label: "Year Newest",       value: "release_year", order: "desc" },
-  { label: "Year Oldest",       value: "release_year", order: "asc"  },
+  { label: "ID",      value: "movie_id",     order: "asc"  },
+  { label: "Title",       value: "title",        order: "asc"  },
+  // { label: "Title Z → A",       value: "title",        order: "desc" },
+  { label: "Rating", value: "rating",       order: "desc" },
+  // { label: "Rating Low → High", value: "rating",       order: "asc"  },
+  { label: "Releasing Year",       value: "release_year", order: "desc" },
+  // { label: "Year Oldest",       value: "release_year", order: "asc"  },
+  { label: "Genre",       value: "genre", order: "desc" },
 ];
 
 export default function MovieTable({ onDataChange }) {
