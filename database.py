@@ -12,13 +12,15 @@ def get_connection():
 def row_to_dict(cursor, row):
     columns = [desc[0] for desc in cursor.description]
     return dict(zip(columns, row))
-    
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def init_db():
-    conn = get_connection()
+    conn   = get_connection()
     cursor = conn.cursor()
+
+    cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS movies (
